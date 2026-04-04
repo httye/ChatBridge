@@ -245,7 +245,7 @@ public class SecureRedisClient {
         if (!permissionManager.canRead(key)) {
             return null;
         }
-        return executeRead(jedis -> jedis.zrange(key, start, stop));
+        return this.<Set<String>>executeRead(jedis -> jedis.zrange(key, start, stop));
     }
     
     // ==================== 键扫描操作 ====================
