@@ -254,12 +254,13 @@ public class SecureRedisClient {
      * 扫描插件键（只返回插件命名空间的键）
      */
     public Set<String> scanPluginKeys(String pattern) {
-        return executeRead(jedis -> {
+        Function<Jedis, Set<String>> action = jedis -> {
             Set<String> result = new java.util.HashSet<>();
             String fullPattern = RedisPermissionManager.PLUGIN_KEY_PREFIX + pattern;
             result.addAll(jedis.keys(fullPattern));
             return result;
-        });
+        };
+        return executeRead(action);
     }
     
     /**
@@ -268,7 +269,8 @@ public class SecureRedisClient {
     public Set<String> scanOwnKeys(String pattern) {
         String serverName = plugin.getConfigManager().getServerName();
         String fullPattern = RedisPermissionManager.PLUGIN_KEY_PREFIX + pattern + ":" + serverName;
-        return executeRead(jedis -> jedis.keys(fullPattern));
+        Function<Jedis, Set<String>> action = jedis -> jedis.keys(fullPattern);
+        return executeRead(action);
     }
     
     // ==================== 过期时间操作 ====================
@@ -320,7 +322,7 @@ public class SecureRedisClient {
      * 生成当前服务器的数据键
      */
     public String generateOwnKey(String type) {
-        return permissionManager.generateOwnKey(type);
+        return permissionManager.generateOwnKey(type, "");
     }
     
     /**

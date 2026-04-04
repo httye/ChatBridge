@@ -73,6 +73,7 @@ public class GlobalChatCommand implements CommandExecutor {
 
         // 创建聊天消息
         ChatMessage chatMessage = new ChatMessage(
+            config.getServerName(), // serverKey - 使用服务器名称作为键
             config.getServerName(),
             config.getServerDisplayName(),
             config.getFormattedServerPrefix(),
