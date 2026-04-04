@@ -1,0 +1,31 @@
+name: ChatBridge
+version: ${project.version}
+main: com.chatbridge.ChatBridgePlugin
+api-version: '1.20'
+author: ChatBridge Team
+description: 多服务器聊天互通插件
+
+commands:
+  chatbridge:
+    description: ChatBridge插件主命令
+    usage: /chatbridge <reload|status>
+    aliases: [cb]
+  globalchat:
+    description: 发送全局消息
+    usage: /globalchat <消息内容>
+    aliases: [gc]
+  togglechat:
+    description: 切换全局聊天显示
+    usage: /togglechat
+    aliases: [tc]
+
+permissions:
+  chatbridge.admin:
+    description: 管理员权限
+    default: op
+  chatbridge.global:
+    description: 全局聊天权限
+    default: true
+  chatbridge.toggle:
+    description: 切换聊天显示权限
+    default: true

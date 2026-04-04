@@ -1,0 +1,89 @@
+# ChatBridge 配置文件
+# 多服务器聊天互通插件配置
+
+# Redis 配置 (用于跨服务器消息传递)
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  # 如果没有密码，留空即可
+  database: 0
+  # 连接池配置
+  pool:
+    max-total: 8
+    max-idle: 8
+    min-idle: 0
+
+# 服务器配置
+server:
+  # 服务器名称，用于标识消息来源
+  name: "Server1"
+  # 服务器显示名称，支持颜色代码
+  display-name: "&a&l生存服"
+  # 服务器前缀配置
+  prefix:
+    # 是否在玩家名字前显示服务器前缀
+    enabled: true
+    # 服务器前缀格式，支持颜色代码
+    # 可用变量: {server} - 服务器显示名称, {server_name} - 服务器标识名
+    format: "&7[&b{server}&7]"
+    # 前缀位置: "before_name" - 玩家名字前, "before_message" - 消息前
+    position: "before_name"
+
+# 聊天配置
+chat:
+  # 聊天格式
+  # 可用变量: {server} - 服务器名称, {player} - 玩家名称, {message} - 消息内容
+  #           {display_name} - 玩家显示名称, {prefix} - 玩家前缀, {suffix} - 玩家后缀
+  format: "&7[&b{server}&7] &r{prefix}{player}&r: &f{message}"
+  
+  # 是否启用全局聊天同步
+  enabled: true
+  
+  # 是否同步玩家加入/退出消息
+  sync-join-quit: true
+  
+  # 是否同步玩家死亡消息
+  sync-death: false
+  
+  # 是否同步服务器启动/关闭消息
+  sync-server-status: true
+  
+  # 加入消息格式
+  join-format: "&7[&b{server}&7] &e{player} &a加入了游戏"
+  
+  # 退出消息格式
+  quit-format: "&7[&b{server}&7] &e{player} &c离开了游戏"
+  
+  # 服务器启动消息
+  server-start-format: "&7[&b{server}&7] &a服务器已启动"
+  
+  # 服务器关闭消息
+  server-stop-format: "&7[&b{server}&7] &c服务器已关闭"
+
+# 消息频道配置
+channels:
+  # 默认频道 (玩家聊天发送到的频道)
+  default: "global"
+  
+  # 可用频道列表
+  available:
+    - global
+    - staff
+    - trade
+
+# 过滤器配置
+filter:
+  # 是否启用敏感词过滤
+  enabled: false
+  
+  # 敏感词列表
+  words:
+    - "badword1"
+    - "badword2"
+  
+  # 替换字符
+  replacement: "***"
+
+# 调试模式
+debug: false
