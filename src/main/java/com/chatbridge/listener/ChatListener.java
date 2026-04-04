@@ -37,20 +37,20 @@ public class ChatListener implements Listener {
         // 获取玩家前缀和后缀 (需要权限插件支持，这里使用空字符串作为默认值)
         String prefix = getPlayerPrefix(player);
         String suffix = getPlayerSuffix(player);
-// 创建聊天消息
-ChatMessage chatMessage = new ChatMessage(
-    config.getServerName(),
-    config.getServerDisplayName(),
-    config.getFormattedServerPrefix(),
-    config.isServerPrefixEnabled(),
-    config.getServerPrefixPosition(),
-    player.getName(),
-    player.getDisplayName(),
-    message,
-    config.getDefaultChannel(),
-    prefix,
-    suffix
-);
+
+        // 创建聊天消息
+        ChatMessage chatMessage = new ChatMessage(
+            config.getServerName(),
+            config.getServerDisplayName(),
+            config.getFormattedServerPrefix(),
+            config.isServerPrefixEnabled(),
+            config.getServerPrefixPosition(),
+            player.getName(),
+            player.getDisplayName(),
+            message,
+            config.getDefaultChannel(),
+            prefix,
+            suffix
         );
 
         // 发布到Redis
