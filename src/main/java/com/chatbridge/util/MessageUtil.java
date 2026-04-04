@@ -2,8 +2,6 @@ package com.chatbridge.util;
 
 import com.chatbridge.config.ConfigManager;
 import com.chatbridge.model.ChatMessage;
-import com.chatbridge.model.PlayerJoinMessage;
-import com.chatbridge.model.PlayerQuitMessage;
 import com.chatbridge.model.ServerStatusMessage;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -21,7 +19,8 @@ public class MessageUtil {
      * 格式化聊天消息
      */
     public static Component formatChatMessage(ChatMessage message, ConfigManager config) {
-        String format = config.getChatFormat();
+        // 基础格式: 前缀 + 玩家名 + 消息
+        String format = "&r{prefix}{player}&r: &f{message}";
         
         // 替换变量
         format = format.replace("{server}", message.getServerDisplayName());
@@ -32,51 +31,18 @@ public class MessageUtil {
         format = format.replace("{suffix}", message.getSuffix());
         
         // 处理服务器前缀
-        String serverPrefix = "";
-        if (message.isServerPrefixEnabled() && message.getServerPrefix() != null) {
-            serverPrefix = message.getServerPrefix();
+        if (message.isServerPrefixEnabled() && message.getServerPrefix() != null && !message.getServerPrefix().isEmpty()) {
+            String serverPrefix = message.getServerPrefix();
+            String position = message.getServerPrefixPosition();
+            
+            if ("before_message".equals(position)) {
+                // 前缀放在消息前
+                format = serverPrefix + " " + format;
+            } else {
+                // 默认: before_name - 前缀放在玩家名前
+                format = format.replace("{player}", serverPrefix + " " + message.getPlayerDisplayName());
+            }
         }
-        
-        // 根据前缀位置处理
-        if ("before_name".equals(message.getServerPrefixPosition())) {
-            // 前缀在玩家名字前
-            format = format.replace("{player}", serverPrefix + " " + message.getPlayerDisplayName());
-        } else if ("before_message".equals(message.getServerPrefixPosition())) {
-            // 前缀在消息前
-            format = format.replace("{message}", serverPrefix + " " + message.getMessage());
-        }
-        
-        // 添加服务器前缀变量
-        format = format.replace("{server_prefix}", serverPrefix);
-        
-        return SERIALIZER.deserialize(format);
-    }
-
-    /**
-     * 格式化玩家加入消息
-     */
-    public static Component formatJoinMessage(PlayerJoinMessage message, ConfigManager config) {
-        String format = config.getJoinFormat();
-        
-        // 替换变量
-        format = format.replace("{server}", message.getServerDisplayName());
-        format = format.replace("{player}", message.getPlayerDisplayName());
-        format = format.replace("{display_name}", message.getPlayerDisplayName());
-        
-        return SERIALIZER.deserialize(format);
-    }
-
-    /**
-     * 格式化玩家退出消息
-     */
-    public static Component formatQuitMessage(PlayerQuitMessage message, ConfigManager config) {
-        String format = config.getQuitFormat();
-        
-        // 替换变量
-        format = format.replace("{server}", message.getServerDisplayName());
-        format = format.replace("{player}", message.getPlayerDisplayName());
-        format = format.replace("{display_name}", message.getPlayerDisplayName());
-        format = format.replace("{reason}", message.getReason() != null ? message.getReason() : "");
         
         return SERIALIZER.deserialize(format);
     }
@@ -85,12 +51,14 @@ public class MessageUtil {
      * 格式化服务器状态消息
      */
     public static Component formatStatusMessage(ServerStatusMessage message, ConfigManager config) {
+        // 使用服务器前缀格式
+        String serverPrefix = config.getFormattedServerPrefix();
         String format;
         
         if ("start".equals(message.getStatus())) {
-            format = config.getServerStartFormat();
+            format = serverPrefix + " &a服务器已启动";
         } else {
-            format = config.getServerStopFormat();
+            format = serverPrefix + " &c服务器已关闭";
         }
         
         // 替换变量

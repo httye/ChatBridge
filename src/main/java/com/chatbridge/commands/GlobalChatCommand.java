@@ -81,7 +81,7 @@ public class GlobalChatCommand implements CommandExecutor {
             playerName,
             playerDisplayName,
             message,
-            config.getDefaultChannel(),
+            "global",
             prefix,
             suffix
         );

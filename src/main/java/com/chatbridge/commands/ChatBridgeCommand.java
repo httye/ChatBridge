@@ -92,12 +92,6 @@ public class ChatBridgeCommand implements CommandExecutor, TabCompleter {
             .append(plugin.getConfigManager().isChatEnabled()
                 ? Component.text("已启用").color(NamedTextColor.GREEN)
                 : Component.text("已禁用").color(NamedTextColor.RED)));
-        
-        sender.sendMessage(Component.text("加入/退出同步: ")
-            .color(NamedTextColor.YELLOW)
-            .append(plugin.getConfigManager().isSyncJoinQuit()
-                ? Component.text("已启用").color(NamedTextColor.GREEN)
-                : Component.text("已禁用").color(NamedTextColor.RED)));
 
         return true;
     }

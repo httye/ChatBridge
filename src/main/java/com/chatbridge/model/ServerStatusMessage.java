@@ -5,6 +5,7 @@ package com.chatbridge.model;
  */
 public class ServerStatusMessage {
 
+    private String serverKey;
     private String serverName;
     private String status; // "start" 或 "stop"
     private long timestamp;
@@ -13,13 +14,18 @@ public class ServerStatusMessage {
         // 用于JSON反序列化
     }
 
-    public ServerStatusMessage(String serverName, String status, long timestamp) {
+    public ServerStatusMessage(String serverKey, String serverName, String status, long timestamp) {
+        this.serverKey = serverKey;
         this.serverName = serverName;
         this.status = status;
         this.timestamp = timestamp;
     }
 
     // Getters
+    public String getServerKey() {
+        return serverKey;
+    }
+
     public String getServerName() {
         return serverName;
     }
@@ -33,6 +39,10 @@ public class ServerStatusMessage {
     }
 
     // Setters
+    public void setServerKey(String serverKey) {
+        this.serverKey = serverKey;
+    }
+
     public void setServerName(String serverName) {
         this.serverName = serverName;
     }

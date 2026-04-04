@@ -5,6 +5,7 @@ package com.chatbridge.model;
  */
 public class ChatMessage {
 
+    private String serverKey;
     private String serverName;
     private String serverDisplayName;
     private String serverPrefix;
@@ -22,11 +23,12 @@ public class ChatMessage {
         // 用于JSON反序列化
     }
 
-    public ChatMessage(String serverName, String serverDisplayName,
+    public ChatMessage(String serverKey, String serverName, String serverDisplayName,
                        String serverPrefix, boolean serverPrefixEnabled, String serverPrefixPosition,
                        String playerName, String playerDisplayName,
                        String message, String channel,
                        String prefix, String suffix) {
+        this.serverKey = serverKey;
         this.serverName = serverName;
         this.serverDisplayName = serverDisplayName;
         this.serverPrefix = serverPrefix != null ? serverPrefix : "";
@@ -42,6 +44,10 @@ public class ChatMessage {
     }
 
     // Getters
+    public String getServerKey() {
+        return serverKey;
+    }
+
     public String getServerName() {
         return serverName;
     }
@@ -91,6 +97,10 @@ public class ChatMessage {
     }
 
     // Setters
+    public void setServerKey(String serverKey) {
+        this.serverKey = serverKey;
+    }
+
     public void setServerName(String serverName) {
         this.serverName = serverName;
     }

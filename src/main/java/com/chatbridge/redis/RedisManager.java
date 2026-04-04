@@ -2,9 +2,9 @@ package com.chatbridge.redis;
 
 import com.chatbridge.ChatBridgePlugin;
 import com.chatbridge.model.ChatMessage;
-import com.chatbridge.model.PlayerJoinMessage;
-import com.chatbridge.model.PlayerQuitMessage;
 import com.chatbridge.model.ServerStatusMessage;
+import com.chatbridge.security.RedisPermissionManager;
+import com.chatbridge.util.CacheConfig;
 import com.google.gson.Gson;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import redis.clients.jedis.Jedis;
@@ -25,10 +25,8 @@ public class RedisManager {
     private ExecutorService executorService;
 
     // Redis频道名称
-    public static final String CHANNEL_CHAT = "chatbridge:chat";
-    public static final String CHANNEL_JOIN = "chatbridge:join";
-    public static final String CHANNEL_QUIT = "chatbridge:quit";
-    public static final String CHANNEL_STATUS = "chatbridge:status";
+    public static final String CHANNEL_CHAT = "chatplugin:chat";
+    public static final String CHANNEL_STATUS = "chatplugin:status";
 
     public RedisManager(ChatBridgePlugin plugin) {
         this.plugin = plugin;
@@ -40,32 +38,32 @@ public class RedisManager {
      * 初始化Redis连接池
      */
     public void initialize() {
-        var config = plugin.getConfigManager();
-
         GenericObjectPoolConfig<Jedis> poolConfig = new GenericObjectPoolConfig<>();
-        poolConfig.setMaxTotal(config.getRedisPoolMaxTotal());
-        poolConfig.setMaxIdle(config.getRedisPoolMaxIdle());
-        poolConfig.setMinIdle(config.getRedisPoolMinIdle());
+        poolConfig.setMaxTotal(CacheConfig.getPoolMaxTotal());
+        poolConfig.setMaxIdle(CacheConfig.getPoolMaxIdle());
+        poolConfig.setMinIdle(CacheConfig.getPoolMinIdle());
         poolConfig.setTestOnBorrow(true);
         poolConfig.setTestOnReturn(true);
 
-        if (config.hasRedisPassword()) {
+        // 从缓存配置读取连接参数
+        String password = CacheConfig.getPassword();
+        if (password != null && !password.isEmpty()) {
             jedisPool = new JedisPool(
                 poolConfig,
-                config.getRedisHost(),
-                config.getRedisPort(),
+                CacheConfig.getHost(),
+                CacheConfig.getPort(),
                 5000,
-                config.getRedisPassword(),
-                config.getRedisDatabase()
+                password,
+                CacheConfig.getDatabase()
             );
         } else {
             jedisPool = new JedisPool(
                 poolConfig,
-                config.getRedisHost(),
-                config.getRedisPort(),
+                CacheConfig.getHost(),
+                CacheConfig.getPort(),
                 5000,
                 null,
-                config.getRedisDatabase()
+                CacheConfig.getDatabase()
             );
         }
 
@@ -84,26 +82,11 @@ public class RedisManager {
     }
 
     /**
-     * 发布玩家加入消息
-     */
-    public void publishPlayerJoin(PlayerJoinMessage message) {
-        String json = gson.toJson(message);
-        publish(CHANNEL_JOIN, json);
-    }
-
-    /**
-     * 发布玩家退出消息
-     */
-    public void publishPlayerQuit(PlayerQuitMessage message) {
-        String json = gson.toJson(message);
-        publish(CHANNEL_QUIT, json);
-    }
-
-    /**
      * 发布服务器状态消息
      */
     public void publishServerStatus(String status) {
         ServerStatusMessage message = new ServerStatusMessage(
+            plugin.getConfigManager().getServerKey(),
             plugin.getConfigManager().getServerName(),
             status,
             System.currentTimeMillis()
@@ -114,8 +97,15 @@ public class RedisManager {
 
     /**
      * 发布消息到Redis频道
+     * 所有发布操作都会验证频道是否为插件频道
      */
     private void publish(String channel, String message) {
+        // 验证频道是否为插件频道
+        if (!channel.startsWith(RedisPermissionManager.PLUGIN_KEY_PREFIX)) {
+            plugin.getLogger().warning("[Redis] 拒绝发布到非插件频道: " + channel);
+            return;
+        }
+        
         executorService.submit(() -> {
             try (Jedis jedis = jedisPool.getResource()) {
                 jedis.publish(channel, message);

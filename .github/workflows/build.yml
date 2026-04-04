@@ -3,6 +3,8 @@ name: Build ChatBridge Plugin
 on:
   push:
     branches: [ main, master ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
@@ -14,6 +16,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -40,6 +44,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -55,11 +61,66 @@ jobs:
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+    - name: Generate Release Notes
+      id: release_notes
+      run: |
+        # 获取上一个 tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        # 如果没有上一个 tag，获取所有的 commit
+        if [ -z "$PREV_TAG" ]; then
+          COMMITS=$(git log --pretty=format:"- %s (%h)" --reverse)
+        else
+          COMMITS=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --reverse)
+        fi
+        
+        # 生成 Release 说明
+        cat > release_notes.md << RELEASE_NOTES
+        ## 🎉 ChatBridge ${{ steps.get_version.outputs.VERSION }}
+        
+        ### 📦 下载
+        - **JAR 文件**: \`chat-bridge-${{ steps.get_version.outputs.VERSION }}.jar\`
+        - **安装方式**: 将 JAR 文件放入 \`plugins\` 目录，重启服务器
+        
+        ### ✨ 更新内容
+        
+        $COMMITS
+        
+        ### 📋 系统要求
+        - Minecraft 服务器: Paper 1.20.4+
+        - Java 版本: 17+
+        - Redis 版本: 7.0+
+        
+        ### ⚙️ 配置说明
+        - Redis 配置已内置，无需手动配置
+        - 违禁词列表已内置，自动从远程加载
+        - 服务器密钥已内置，自动从远程验证
+        
+        ### 📖 文档
+        - [GitHub 仓库](https://github.com/ChatBridge/ChatBridge)
+        - [README](https://github.com/ChatBridge/ChatBridge/blob/master/README.md)
+        
+        ---
+        
+        **感谢使用 ChatBridge！** 🎮
+        RELEASE_NOTES
+        
+        # 输出 Release 说明（用于调试）
+        cat release_notes.md
+        
+        # 设置输出
+        echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+        cat release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: target/chat-bridge-*.jar
-        generate_release_notes: true
+        body: ${{ steps.release_notes.outputs.NOTES }}
         tag_name: ${{ steps.get_version.outputs.VERSION }}
+        name: ChatBridge ${{ steps.get_version.outputs.VERSION }}
+        draft: false
+        prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

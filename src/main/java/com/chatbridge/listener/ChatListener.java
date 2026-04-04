@@ -40,6 +40,7 @@ public class ChatListener implements Listener {
 
         // 创建聊天消息
         ChatMessage chatMessage = new ChatMessage(
+            config.getServerKey(),
             config.getServerName(),
             config.getServerDisplayName(),
             config.getFormattedServerPrefix(),
@@ -48,7 +49,7 @@ public class ChatListener implements Listener {
             player.getName(),
             player.getDisplayName(),
             message,
-            config.getDefaultChannel(),
+            "global",
             prefix,
             suffix
         );

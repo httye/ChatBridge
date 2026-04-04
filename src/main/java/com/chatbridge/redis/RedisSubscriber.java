@@ -2,8 +2,6 @@ package com.chatbridge.redis;
 
 import com.chatbridge.ChatBridgePlugin;
 import com.chatbridge.model.ChatMessage;
-import com.chatbridge.model.PlayerJoinMessage;
-import com.chatbridge.model.PlayerQuitMessage;
 import com.chatbridge.model.ServerStatusMessage;
 import com.chatbridge.util.MessageUtil;
 import com.google.gson.Gson;
@@ -54,8 +52,6 @@ public class RedisSubscriber {
                     // 订阅所有频道
                     jedis.subscribe(pubSub, 
                         RedisManager.CHANNEL_CHAT,
-                        RedisManager.CHANNEL_JOIN,
-                        RedisManager.CHANNEL_QUIT,
                         RedisManager.CHANNEL_STATUS
                     );
                 } catch (Exception e) {
@@ -98,12 +94,6 @@ public class RedisSubscriber {
             case RedisManager.CHANNEL_CHAT:
                 handleChatMessage(message);
                 break;
-            case RedisManager.CHANNEL_JOIN:
-                handleJoinMessage(message);
-                break;
-            case RedisManager.CHANNEL_QUIT:
-                handleQuitMessage(message);
-                break;
             case RedisManager.CHANNEL_STATUS:
                 handleStatusMessage(message);
                 break;
@@ -116,6 +106,14 @@ public class RedisSubscriber {
     private void handleChatMessage(String message) {
         try {
             ChatMessage chatMessage = gson.fromJson(message, ChatMessage.class);
+            
+            // 验证服务器密钥
+            if (!validateServerKey(chatMessage.getServerKey())) {
+                if (plugin.getConfigManager().isDebug()) {
+                    plugin.getLogger().warning("[Redis] 收到未授权的聊天消息，密钥不匹配");
+                }
+                return;
+            }
             
             // 忽略来自本服务器的消息
             if (chatMessage.getServerName().equals(plugin.getConfigManager().getServerName())) {
@@ -140,66 +138,6 @@ public class RedisSubscriber {
     }
 
     /**
-     * 处理玩家加入消息
-     */
-    private void handleJoinMessage(String message) {
-        if (!plugin.getConfigManager().isSyncJoinQuit()) {
-            return;
-        }
-
-        try {
-            PlayerJoinMessage joinMessage = gson.fromJson(message, PlayerJoinMessage.class);
-            
-            // 忽略来自本服务器的消息
-            if (joinMessage.getServerName().equals(plugin.getConfigManager().getServerName())) {
-                return;
-            }
-
-            Component component = MessageUtil.formatJoinMessage(joinMessage, plugin.getConfigManager());
-            
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                for (var player : Bukkit.getOnlinePlayers()) {
-                    if (plugin.isChatToggled(player.getUniqueId())) {
-                        player.sendMessage(component);
-                    }
-                }
-            });
-        } catch (Exception e) {
-            plugin.getLogger().severe("[Redis] 处理加入消息失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 处理玩家退出消息
-     */
-    private void handleQuitMessage(String message) {
-        if (!plugin.getConfigManager().isSyncJoinQuit()) {
-            return;
-        }
-
-        try {
-            PlayerQuitMessage quitMessage = gson.fromJson(message, PlayerQuitMessage.class);
-            
-            // 忽略来自本服务器的消息
-            if (quitMessage.getServerName().equals(plugin.getConfigManager().getServerName())) {
-                return;
-            }
-
-            Component component = MessageUtil.formatQuitMessage(quitMessage, plugin.getConfigManager());
-            
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                for (var player : Bukkit.getOnlinePlayers()) {
-                    if (plugin.isChatToggled(player.getUniqueId())) {
-                        player.sendMessage(component);
-                    }
-                }
-            });
-        } catch (Exception e) {
-            plugin.getLogger().severe("[Redis] 处理退出消息失败: " + e.getMessage());
-        }
-    }
-
-    /**
      * 处理服务器状态消息
      */
     private void handleStatusMessage(String message) {
@@ -210,6 +148,14 @@ public class RedisSubscriber {
         try {
             ServerStatusMessage statusMessage = gson.fromJson(message, ServerStatusMessage.class);
             
+            // 验证服务器密钥
+            if (!validateServerKey(statusMessage.getServerKey())) {
+                if (plugin.getConfigManager().isDebug()) {
+                    plugin.getLogger().warning("[Redis] 收到未授权的状态消息，密钥不匹配");
+                }
+                return;
+            }
+            
             // 忽略来自本服务器的消息
             if (statusMessage.getServerName().equals(plugin.getConfigManager().getServerName())) {
                 return;
@@ -217,15 +163,26 @@ public class RedisSubscriber {
 
             Component component = MessageUtil.formatStatusMessage(statusMessage, plugin.getConfigManager());
             
+            // 向所有在线玩家广播服务器状态消息（不受玩家聊天开关影响）
             Bukkit.getScheduler().runTask(plugin, () -> {
                 for (var player : Bukkit.getOnlinePlayers()) {
-                    if (plugin.isChatToggled(player.getUniqueId())) {
-                        player.sendMessage(component);
-                    }
+                    player.sendMessage(component);
                 }
             });
         } catch (Exception e) {
             plugin.getLogger().severe("[Redis] 处理状态消息失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 验证服务器密钥
+     * 使用KeyProvider验证密钥是否在有效密钥列表中
+     */
+    private boolean validateServerKey(String key) {
+        if (key == null || key.isEmpty()) {
+            return false;
+        }
+        // 使用KeyProvider验证密钥
+        return plugin.getKeyProvider().isValidKey(key);
     }
 }
