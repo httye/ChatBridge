@@ -59,39 +59,39 @@ public class ChatListener implements Listener {
 
     /**
      * 获取玩家前缀
-     * 可以在这里集成权限插件如LuckPerms、Vault等
+     * 使用反射来支持可选的权限插件
      */
     private String getPlayerPrefix(Player player) {
         // 尝试获取LuckPerms前缀
-        if (plugin.getServer().getPluginManager().getPlugin("LuckPerms") != null) {
-            try {
-                net.luckperms.api.LuckPerms luckPerms = plugin.getServer().getServicesManager()
-                    .load(net.luckperms.api.LuckPerms.class);
-                if (luckPerms != null) {
-                    net.luckperms.api.model.user.User user = luckPerms.getUserManager()
-                        .getUser(player.getUniqueId());
-                    if (user != null) {
-                        String prefix = user.getCachedData().getMetaData().getPrefix();
-                        return prefix != null ? prefix : "";
-                    }
+        try {
+            Object luckPerms = plugin.getServer().getServicesManager()
+                .load(Class.forName("net.luckperms.api.LuckPerms"));
+            if (luckPerms != null) {
+                Object userManager = luckPerms.getClass().getMethod("getUserManager").invoke(luckPerms);
+                Object user = userManager.getClass().getMethod("getUser", java.util.UUID.class)
+                    .invoke(userManager, player.getUniqueId());
+                if (user != null) {
+                    Object cachedData = user.getClass().getMethod("getCachedData").invoke(user);
+                    Object metaData = cachedData.getClass().getMethod("getMetaData").invoke(cachedData);
+                    String prefix = (String) metaData.getClass().getMethod("getPrefix").invoke(metaData);
+                    return prefix != null ? prefix : "";
                 }
-            } catch (Exception e) {
-                // 忽略异常，使用默认值
             }
+        } catch (Exception e) {
+            // 忽略异常，尝试其他方式
         }
 
         // 尝试获取Vault前缀
-        if (plugin.getServer().getPluginManager().getPlugin("Vault") != null) {
-            try {
-                var chat = plugin.getServer().getServicesManager()
-                    .load(net.milkbowl.vault.chat.Chat.class);
-                if (chat != null) {
-                    String prefix = chat.getPlayerPrefix(player);
-                    return prefix != null ? prefix : "";
-                }
-            } catch (Exception e) {
-                // 忽略异常，使用默认值
+        try {
+            Object chat = plugin.getServer().getServicesManager()
+                .load(Class.forName("net.milkbowl.vault.chat.Chat"));
+            if (chat != null) {
+                String prefix = (String) chat.getClass().getMethod("getPlayerPrefix", Player.class)
+                    .invoke(chat, player);
+                return prefix != null ? prefix : "";
             }
+        } catch (Exception e) {
+            // 忽略异常，使用默认值
         }
 
         return "";
@@ -99,39 +99,39 @@ public class ChatListener implements Listener {
 
     /**
      * 获取玩家后缀
-     * 可以在这里集成权限插件如LuckPerms、Vault等
+     * 使用反射来支持可选的权限插件
      */
     private String getPlayerSuffix(Player player) {
         // 尝试获取LuckPerms后缀
-        if (plugin.getServer().getPluginManager().getPlugin("LuckPerms") != null) {
-            try {
-                net.luckperms.api.LuckPerms luckPerms = plugin.getServer().getServicesManager()
-                    .load(net.luckperms.api.LuckPerms.class);
-                if (luckPerms != null) {
-                    net.luckperms.api.model.user.User user = luckPerms.getUserManager()
-                        .getUser(player.getUniqueId());
-                    if (user != null) {
-                        String suffix = user.getCachedData().getMetaData().getSuffix();
-                        return suffix != null ? suffix : "";
-                    }
+        try {
+            Object luckPerms = plugin.getServer().getServicesManager()
+                .load(Class.forName("net.luckperms.api.LuckPerms"));
+            if (luckPerms != null) {
+                Object userManager = luckPerms.getClass().getMethod("getUserManager").invoke(luckPerms);
+                Object user = userManager.getClass().getMethod("getUser", java.util.UUID.class)
+                    .invoke(userManager, player.getUniqueId());
+                if (user != null) {
+                    Object cachedData = user.getClass().getMethod("getCachedData").invoke(user);
+                    Object metaData = cachedData.getClass().getMethod("getMetaData").invoke(cachedData);
+                    String suffix = (String) metaData.getClass().getMethod("getSuffix").invoke(metaData);
+                    return suffix != null ? suffix : "";
                 }
-            } catch (Exception e) {
-                // 忽略异常，使用默认值
             }
+        } catch (Exception e) {
+            // 忽略异常，尝试其他方式
         }
 
         // 尝试获取Vault后缀
-        if (plugin.getServer().getPluginManager().getPlugin("Vault") != null) {
-            try {
-                var chat = plugin.getServer().getServicesManager()
-                    .load(net.milkbowl.vault.chat.Chat.class);
-                if (chat != null) {
-                    String suffix = chat.getPlayerSuffix(player);
-                    return suffix != null ? suffix : "";
-                }
-            } catch (Exception e) {
-                // 忽略异常，使用默认值
+        try {
+            Object chat = plugin.getServer().getServicesManager()
+                .load(Class.forName("net.milkbowl.vault.chat.Chat"));
+            if (chat != null) {
+                String suffix = (String) chat.getClass().getMethod("getPlayerSuffix", Player.class)
+                    .invoke(chat, player);
+                return suffix != null ? suffix : "";
             }
+        } catch (Exception e) {
+            // 忽略异常，使用默认值
         }
 
         return "";

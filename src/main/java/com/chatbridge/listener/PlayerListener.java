@@ -59,7 +59,7 @@ public class PlayerListener implements Listener {
             config.getServerDisplayName(),
             player.getName(),
             player.getDisplayName(),
-            event.getReason() != null ? event.getReason() : ""
+            ""
         );
 
         // 发布到Redis
