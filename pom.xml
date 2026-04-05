@@ -65,6 +65,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <finalName>${project.artifactId}-${project.version}</finalName>
                             <relocations>
                                 <relocation>
                                     <pattern>redis.clients</pattern>
