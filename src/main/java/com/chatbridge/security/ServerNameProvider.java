@@ -19,20 +19,20 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 密钥提供者
- * 从远程URL获取有效的密钥列表
- * 插件只接收来自这些密钥对应频道的消息
+ * 服务器名称提供者
+ * 从远程URL获取允许的服务器名称列表
+ * 插件只允许配置的服务器名称接入服务
  * 使用 MD5 校验本地缓存，每次启动和 reload 时强制校验
  */
-public class KeyProvider {
+public class ServerNameProvider {
 
     private final ChatBridgePlugin plugin;
     private final Gson gson;
-    private final Set<String> validKeys;
+    private final Set<String> validServerNames;
     private ScheduledExecutorService scheduler;
     
-    // 远程密钥列表URL
-    private String keyListUrl;
+    // 远程服务器名称列表URL
+    private String serverNameListUrl;
     // 刷新间隔（分钟）
     private int refreshInterval;
     
@@ -41,40 +41,40 @@ public class KeyProvider {
     private File md5File;
     
     // 文件名（用于 MD5 校验）
-    private static final String CACHE_FILENAME = "keys.cache";
+    private static final String CACHE_FILENAME = "servernames.cache";
     
     // 强制验证标志
     private boolean forceValidation = true;
 
-    public KeyProvider(ChatBridgePlugin plugin) {
+    public ServerNameProvider(ChatBridgePlugin plugin) {
         this.plugin = plugin;
         this.gson = new Gson();
-        this.validKeys = new HashSet<>();
+        this.validServerNames = new HashSet<>();
         
         // 初始化本地缓存文件
         File dataFolder = plugin.getDataFolder();
         dataFolder.mkdirs();
         cacheFile = new File(dataFolder, CACHE_FILENAME);
-        md5File = new File(dataFolder, "keys.md5");
+        md5File = new File(dataFolder, "servernames.md5");
     }
 
     /**
-     * 初始化密钥提供者
-     * @param url 密钥列表URL
+     * 初始化服务器名称提供者
+     * @param url 服务器名称列表URL
      * @param refreshIntervalMinutes 刷新间隔（分钟）
      */
     public void initialize(String url, int refreshIntervalMinutes) {
-        this.keyListUrl = url;
+        this.serverNameListUrl = url;
         this.refreshInterval = refreshIntervalMinutes;
         
         // 立即加载一次（会校验 MD5）
-        loadKeys();
+        loadServerNames();
         
         // 设置定时刷新
         if (refreshInterval > 0) {
             scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleAtFixedRate(
-                this::loadKeys,
+                this::loadServerNames,
                 refreshInterval,
                 refreshInterval,
                 TimeUnit.MINUTES
@@ -83,17 +83,17 @@ public class KeyProvider {
     }
 
     /**
-     * 从远程URL加载密钥列表
+     * 从远程URL加载服务器名称列表
      * 每次都会校验 MD5，如果不匹配则重新下载
      */
-    private void loadKeys() {
-        if (keyListUrl == null || keyListUrl.isEmpty()) {
-            plugin.getLogger().warning("[KeyProvider] 密钥列表URL未配置");
+    private void loadServerNames() {
+        if (serverNameListUrl == null || serverNameListUrl.isEmpty()) {
+            plugin.getLogger().warning("[ServerNameProvider] 服务器名称列表URL未配置");
             return;
         }
         
         try {
-            URL url = new URL(keyListUrl);
+            URL url = new URL(serverNameListUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(5000);
@@ -101,7 +101,7 @@ public class KeyProvider {
             
             int responseCode = connection.getResponseCode();
             if (responseCode != 200) {
-                plugin.getLogger().warning("[KeyProvider] 获取密钥列表失败，HTTP响应码: " + responseCode);
+                plugin.getLogger().warning("[ServerNameProvider] 获取服务器名称列表失败，HTTP响应码: " + responseCode);
                 return;
             }
             
@@ -132,28 +132,28 @@ public class KeyProvider {
                 // 保存到本地文件
                 saveToCache(content, newMd5);
                 
-                // 解析密钥列表
-                Set<String> newKeys = parseKeys(content);
+                // 解析服务器名称列表
+                Set<String> newNames = parseServerNames(content);
                 
-                if (!newKeys.isEmpty()) {
-                    validKeys.clear();
-                    validKeys.addAll(newKeys);
-                    plugin.getLogger().info("[KeyProvider] 成功加载 " + validKeys.size() + " 个密钥");
+                if (!newNames.isEmpty()) {
+                    validServerNames.clear();
+                    validServerNames.addAll(newNames);
+                    plugin.getLogger().info("[ServerNameProvider] 成功加载 " + validServerNames.size() + " 个允许的服务器名称");
                     
                     // 仅在 debug 模式下显示详细信息
                     if (plugin.getConfigManager().isDebug()) {
-                        plugin.getLogger().info("[KeyProvider] 密钥列表已验证");
+                        plugin.getLogger().info("[ServerNameProvider] 服务器名称列表已验证");
                     }
                 }
             } else {
                 // MD5 匹配，从本地缓存加载
-                if (!validKeys.isEmpty()) {
-                    plugin.getLogger().info("[KeyProvider] 使用缓存密钥列表（" + validKeys.size() + " 个）");
+                if (!validServerNames.isEmpty()) {
+                    plugin.getLogger().info("[ServerNameProvider] 使用缓存服务器名称列表（" + validServerNames.size() + " 个）");
                 }
             }
             
         } catch (Exception e) {
-            plugin.getLogger().severe("[KeyProvider] 加载密钥列表失败: " + e.getMessage());
+            plugin.getLogger().severe("[ServerNameProvider] 加载服务器名称列表失败: " + e.getMessage());
         }
     }
 
@@ -176,7 +176,7 @@ public class KeyProvider {
                 // 使用远程 MD5 进行校验
                 boolean matches = md5Validator.validateMD5(CACHE_FILENAME, contentMd5);
                 if (!matches && plugin.getConfigManager().isDebug()) {
-                    plugin.getLogger().warning("[KeyProvider] MD5 校验失败，将重新下载");
+                    plugin.getLogger().warning("[ServerNameProvider] MD5 校验失败，将重新下载");
                 }
                 return !matches;
             }
@@ -207,7 +207,7 @@ public class KeyProvider {
                 writer.write(md5);
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("[KeyProvider] 保存本地缓存失败: " + e.getMessage());
+            plugin.getLogger().warning("[ServerNameProvider] 保存本地缓存失败: " + e.getMessage());
         }
     }
 
@@ -231,80 +231,84 @@ public class KeyProvider {
     }
 
     /**
-     * 解析密钥列表JSON
+     * 解析服务器名称列表JSON
      * 支持三种格式：
-     * 1. JSON数组: ["key1", "key2", "key3"]
-     * 2. JSON对象: {"keys": ["key1", "key2"], "channels": {...}}
-     * 3. 新格式: {"keys": [{"key": "serverkey_001"}, {"key": "admin_secret_key"}]}
+     * 1. JSON数组: ["Server1", "Server2", "Server3"]
+     * 2. JSON对象: {"server_names": ["Server1", "Server2"], "version": "1.0"}
+     * 3. 新格式: {"names": [{"name": "servername", "created_at": "2023-01-01"}, ...]}
      */
-    private Set<String> parseKeys(String json) {
-        Set<String> keys = new HashSet<>();
+    private Set<String> parseServerNames(String json) {
+        Set<String> serverNames = new HashSet<>();
         
         try {
             // 尝试解析为数组
             if (json.trim().startsWith("[")) {
-                Set<String> arrayKeys = gson.fromJson(json, new TypeToken<Set<String>>(){}.getType());
-                if (arrayKeys != null) {
-                    keys.addAll(arrayKeys);
+                Set<String> arrayNames = gson.fromJson(json, new TypeToken<Set<String>>(){}.getType());
+                if (arrayNames != null) {
+                    serverNames.addAll(arrayNames);
                 }
             } else {
                 // 尝试解析为对象
-                KeyListResponse response = gson.fromJson(json, KeyListResponse.class);
-                if (response != null && response.keys != null) {
-                    // 检查 keys 是字符串集合还是对象集合
-                    if (!response.keys.isEmpty()) {
-                        Object firstKey = response.keys.iterator().next();
-                        if (firstKey instanceof String) {
+                ServerNameListResponse response = gson.fromJson(json, ServerNameListResponse.class);
+                if (response != null) {
+                    // 优先检查新格式的 names 字段
+                    if (response.names != null && !response.names.isEmpty()) {
+                        Object firstItem = response.names.iterator().next();
+                        if (firstItem instanceof String) {
                             // 字符串集合格式
-                            keys.addAll(response.keys);
+                            serverNames.addAll(response.names);
                         } else {
-                            // 对象集合格式，需要提取 key 字段
-                            for (Object obj : response.keys) {
-                                if (obj instanceof KeyItem) {
-                                    keys.add(((KeyItem) obj).key);
+                            // 对象集合格式，需要提取 name 字段
+                            for (Object obj : response.names) {
+                                if (obj instanceof NameItem) {
+                                    serverNames.add(((NameItem) obj).name);
                                 }
                             }
                         }
                     }
+                    // 如果 names 为空，检查旧格式的 serverNames 字段
+                    else if (response.serverNames != null) {
+                        serverNames.addAll(response.serverNames);
+                    }
                 }
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("[KeyProvider] 解析密钥列表失败: " + e.getMessage());
+            plugin.getLogger().warning("[ServerNameProvider] 解析服务器名称列表失败: " + e.getMessage());
         }
         
-        return keys;
+        return serverNames;
     }
 
     /**
-     * 验证密钥是否有效
-     * @param key 要验证的密钥
+     * 验证服务器名称是否有效
+     * @param serverName 要验证的服务器名称
      * @return 是否有效
      */
-    public boolean isValidKey(String key) {
-        if (key == null || key.isEmpty()) {
+    public boolean isValidServerName(String serverName) {
+        if (serverName == null || serverName.isEmpty()) {
             return false;
         }
-        return validKeys.contains(key);
+        return validServerNames.contains(serverName);
     }
 
     /**
-     * 获取所有有效密钥
-     * @return 密钥集合
+     * 获取所有有效的服务器名称
+     * @return 服务器名称集合
      */
-    public Set<String> getValidKeys() {
-        return new HashSet<>(validKeys);
+    public Set<String> getValidServerNames() {
+        return new HashSet<>(validServerNames);
     }
 
     /**
-     * 手动刷新密钥列表（强制重新下载并验证）
+     * 手动刷新服务器名称列表（强制重新下载并验证）
      */
     public void refresh() {
         forceValidation = true;
-        loadKeys();
+        loadServerNames();
     }
 
     /**
-     * 关闭密钥提供者
+     * 关闭服务器名称提供者
      */
     public void shutdown() {
         if (scheduler != null && !scheduler.isShutdown()) {
@@ -313,16 +317,19 @@ public class KeyProvider {
     }
 
     /**
-     * 密钥列表响应结构
+     * 服务器名称列表响应结构
      */
-    private static class KeyListResponse {
-        Set<Object> keys;
+    private static class ServerNameListResponse {
+        Set<Object> names;
+        Set<String> serverNames;
+        String version;
     }
     
     /**
-     * 密钥项结构
+     * 名称项结构
      */
-    private static class KeyItem {
-        String key;
+    private static class NameItem {
+        String name;
+        String created_at;
     }
 }

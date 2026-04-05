@@ -2,6 +2,8 @@ package com.chatbridge.config;
 
 import com.chatbridge.ChatBridgePlugin;
 import com.chatbridge.security.BanWordsProvider;
+import com.chatbridge.security.MD5Validator;
+import com.chatbridge.security.ServerNameProvider;
 import com.chatbridge.util.CacheConfig;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -15,12 +17,20 @@ public class ConfigManager {
 
     private final ChatBridgePlugin plugin;
     private BanWordsProvider banWordsProvider;
+    private ServerNameProvider serverNameProvider;
+    private MD5Validator md5Validator;
     private boolean banWordsProviderInitialized = false;
+    private boolean serverNameProviderInitialized = false;
+    private boolean md5ValidatorInitialized = false;
 
     // 安全配置
     private String serverKey;
     private String keysUrl;
     private int keysRefreshInterval;
+    private String serverNamesUrl;
+    private int serverNamesRefreshInterval;
+    private String md5Url;
+    private int md5RefreshInterval;
 
     // 服务器配置
     private String serverName;
@@ -43,6 +53,7 @@ public class ConfigManager {
     public ConfigManager(ChatBridgePlugin plugin) {
         this.plugin = plugin;
         this.banWordsProvider = new BanWordsProvider(plugin);
+        this.md5Validator = new MD5Validator(plugin);
     }
 
     /**
@@ -56,6 +67,10 @@ public class ConfigManager {
         serverKey = config.getString("security.server-key", "your-secret-key-here");
         keysUrl = CacheConfig.getKeysUrl();
         keysRefreshInterval = CacheConfig.getKeysRefreshInterval();
+        serverNamesUrl = CacheConfig.getServerNamesUrl();
+        serverNamesRefreshInterval = 60; // 1小时刷新一次
+        md5Url = CacheConfig.getMD5Url();
+        md5RefreshInterval = 30; // 30分钟刷新一次
 
         // 加载服务器配置
         serverName = config.getString("server.name", "Server1");
@@ -81,6 +96,28 @@ public class ConfigManager {
             banWordsProvider.refresh();
         }
 
+        // 初始化 MD5 校验提供者（最先初始化，供其他 Provider 使用）
+        if (!md5ValidatorInitialized) {
+            md5Validator.initialize(
+                md5Url,
+                md5RefreshInterval
+            );
+            md5ValidatorInitialized = true;
+        } else {
+            md5Validator.refresh();
+        }
+
+        // 初始化服务器名称提供者
+        if (!serverNameProviderInitialized) {
+            serverNameProvider.initialize(
+                serverNamesUrl,
+                serverNamesRefreshInterval
+            );
+            serverNameProviderInitialized = true;
+        } else {
+            serverNameProvider.refresh();
+        }
+
         // 加载调试模式
         
         // 校验密钥和违禁词缓存（每次启动和 reload 时）
@@ -99,6 +136,22 @@ public class ConfigManager {
     
     public int getKeysRefreshInterval() {
         return keysRefreshInterval;
+    }
+    
+    public String getServerNamesUrl() {
+        return serverNamesUrl;
+    }
+    
+    public int getServerNamesRefreshInterval() {
+        return serverNamesRefreshInterval;
+    }
+    
+    public String getMD5Url() {
+        return md5Url;
+    }
+    
+    public int getMD5RefreshInterval() {
+        return md5RefreshInterval;
     }
 
     // 服务器配置Getters
@@ -163,6 +216,20 @@ public class ConfigManager {
     }
     
     /**
+     * 获取服务器名称提供者
+     */
+    public ServerNameProvider getServerNameProvider() {
+        return serverNameProvider;
+    }
+    
+    /**
+     * 获取 MD5 校验提供者
+     */
+    public MD5Validator getMD5Validator() {
+        return md5Validator;
+    }
+    
+    /**
      * 刷新违禁词列表
      */
     /**
@@ -173,11 +240,31 @@ public class ConfigManager {
     }
 
     /**
-     * 刷新所有缓存（密钥和违禁词）
+     * 刷新服务器名称列表
+     */
+    public void refreshServerNames() {
+        if (serverNameProvider != null) {
+            serverNameProvider.refresh();
+        }
+    }
+    
+    /**
+     * 刷新 MD5 列表
+     */
+    public void refreshMD5List() {
+        if (md5Validator != null) {
+            md5Validator.refresh();
+        }
+    }
+
+    /**
+     * 刷新所有缓存（密钥、违禁词、服务器名称和 MD5 列表）
      */
     public void refreshAllCaches() {
         refreshKeys();
         refreshBanWords();
+        refreshServerNames();
+        refreshMD5List();
     }
 
 

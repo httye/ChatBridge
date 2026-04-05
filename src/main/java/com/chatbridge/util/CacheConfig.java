@@ -38,7 +38,7 @@ public class CacheConfig {
     }
     
     public static String getPassword() {
-        return getValue("Y2hhdHBsdWdpbg");
+        return getValue("Y2hhdDExNDUxNA");
     }
     
     public static int getDatabase() {
@@ -78,7 +78,7 @@ public class CacheConfig {
     }
     
     public static String getKeysUrl() {
-        return getValue("aHR0cHM6Ly9rZXlzLmZ1ZnVpdS5jbi9rZXlzLnR4dA");
+        return getValue("aHR0cHM6Ly9rZXlzLmZ1ZnVpdS5jbi9hcGkva2V5cw");
     }
     
     public static int getKeysRefreshInterval() {
@@ -92,5 +92,13 @@ public class CacheConfig {
     
     public static String getBanWordsUrl() {
         return getValue("aHR0cHM6Ly9rZXlzLmZ1ZnVpdS5jbi9iYW53b3Jkcy50eHQ");
+    }
+    
+    public static String getServerNamesUrl() {
+        return getValue("aHR0cHM6Ly9rZXlzLmZ1ZnVpdS5jbi9hcGkvbmFtZXM");
+    }
+    
+    public static String getMD5Url() {
+        return getValue("aHR0cHM6Ly9rZXlzLmZ1ZnVpdS5jbi9hcGkvbWQ1");
     }
 }

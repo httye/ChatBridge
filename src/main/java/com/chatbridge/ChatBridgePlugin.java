@@ -48,6 +48,56 @@ public class ChatBridgePlugin extends JavaPlugin {
         configManager = new ConfigManager(this);
         configManager.loadConfig();
         
+        // 强制验证所有缓存数据
+        getLogger().info("§7  - 正在验证缓存数据完整性...");
+        
+        // 等待 MD5 列表加载完成（最多等待10秒）
+        if (configManager.getMD5Validator() != null) {
+            int retries = 20;
+            while (retries > 0 && !configManager.getMD5Validator().isLoaded()) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    break;
+                }
+                retries--;
+            }
+            if (retries > 0) {
+                getLogger().info("§7  - MD5 列表已加载");
+            }
+        }
+        
+        // 验证服务器名称是否在允许列表中
+        String serverName = configManager.getServerName();
+        if (configManager.getServerNameProvider() != null) {
+            // 等待服务器名称列表加载完成（最多等待10秒）
+            int retries = 20;
+            boolean isValid = false;
+            while (retries > 0) {
+                if (configManager.getServerNameProvider().isValidServerName(serverName)) {
+                    isValid = true;
+                    break;
+                }
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    break;
+                }
+                retries--;
+            }
+            
+            if (!isValid) {
+                getLogger().severe("§c✘ 服务器名称 '" + serverName + "' 不在允许的列表中!");
+                getLogger().severe("§c  请联系管理员将服务器名称添加到允许列表中!");
+                getLogger().severe("§c  当前允许的服务器名称: " + 
+                    configManager.getServerNameProvider().getValidServerNames());
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            } else {
+                getLogger().info("§a✔ §f服务器名称验证通过: " + serverName);
+            }
+        }
+        
         // 初始化密钥提供者
         keyProvider = new KeyProvider(this);
         keyProvider.initialize(
@@ -141,6 +191,19 @@ public class ChatBridgePlugin extends JavaPlugin {
             configManager.getBanWordsProvider().shutdown();
             getLogger().info("§7  - 已停止违禁词提供者");
         }
+        
+        // 关闭服务器名称提供者
+        if (configManager.getServerNameProvider() != null) {
+            configManager.getServerNameProvider().shutdown();
+            getLogger().info("§7  - 已停止服务器名称提供者");
+        }
+        
+        // 关闭 MD5 校验提供者
+        if (configManager.getMD5Validator() != null) {
+            configManager.getMD5Validator().shutdown();
+            getLogger().info("§7  - 已停止 MD5 校验提供者");
+        }
+        
         if (keyProvider != null) {
             keyProvider.shutdown();
             getLogger().info("§7  - 已停止密钥提供者");
@@ -176,11 +239,23 @@ public class ChatBridgePlugin extends JavaPlugin {
      * 重载插件
      */
     public void reload() {
+        getLogger().info("§7  - 正在重新验证缓存数据...");
+        
         configManager.loadConfig();
         
-        // 刷新密钥列表
+        // 刷新 MD5 列表（优先获取最新的 MD5）
+        if (configManager.getMD5Validator() != null) {
+            configManager.getMD5Validator().refresh();
+        }
+        
+        // 刷新密钥列表（强制验证）
         if (keyProvider != null) {
             keyProvider.refresh();
+        }
+        
+        // 刷新服务器名称列表（强制验证）
+        if (configManager.getServerNameProvider() != null) {
+            configManager.getServerNameProvider().refresh();
         }
         
         getLogger().info("配置已重新加载!");
