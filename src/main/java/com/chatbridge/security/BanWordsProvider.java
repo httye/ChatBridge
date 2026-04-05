@@ -136,10 +136,17 @@ public class BanWordsProvider {
                     banWords.addAll(newWords);
                     plugin.getLogger().info("[BanWords] 成功加载 " + banWords.size() + " 个违禁词");
                 }
+            } else {
+                // 校验失败，清空违禁词列表
+                banWords.clear();
+                plugin.getLogger().severe("[BanWords] 违禁词列表校验失败，已禁用违禁词过滤功能！");
+                plugin.getLogger().severe("[BanWords] 原因：数据完整性验证未通过，可能是数据被篡改或来源不合法");
             }
             
         } catch (Exception e) {
             plugin.getLogger().severe("[BanWords] 加载违禁词列表失败: " + e.getMessage());
+            // 发生错误时也清空违禁词列表
+            banWords.clear();
         }
     }
 
@@ -147,17 +154,23 @@ public class BanWordsProvider {
      * 检查是否需要更新
      * 使用远程 MD5 校验器验证本地缓存
      * @param contentMd5 计算的内容MD5值
-     * @return 是否需要更新
+     * @return 是否需要更新（true=使用新数据，false=拒绝使用）
      */
     private boolean needUpdate(String contentMd5) {
         try {
             // 如果本地没有文件，需要下载
             if (!md5File.exists() || !cacheFile.exists()) {
-                return true;
-            }
-            
-            // 如果是强制验证模式，总是重新验证
-            if (forceValidation) {
+                // 强制验证模式下，新数据必须通过MD5校验
+                if (forceValidation) {
+                    MD5Validator md5Validator = plugin.getConfigManager().getMD5Validator();
+                    if (md5Validator != null && md5Validator.hasMD5(CACHE_FILENAME)) {
+                        boolean matches = md5Validator.validateMD5(CACHE_FILENAME, contentMd5);
+                        if (!matches) {
+                            plugin.getLogger().warning("[BanWords] 强制校验失败，拒绝使用新下载的违禁词列表");
+                            return false;
+                        }
+                    }
+                }
                 return true;
             }
             
@@ -166,18 +179,21 @@ public class BanWordsProvider {
             if (md5Validator != null && md5Validator.hasMD5(CACHE_FILENAME)) {
                 // 使用远程 MD5 进行校验
                 boolean matches = md5Validator.validateMD5(CACHE_FILENAME, contentMd5);
-                if (!matches && plugin.getConfigManager().isDebug()) {
-                    plugin.getLogger().warning("[BanWords] 校验失败，将重新下载");
+                if (!matches) {
+                    plugin.getLogger().warning("[BanWords] 违禁词列表校验失败，数据完整性验证未通过");
+                    return false;
                 }
-                return !matches;
+                // 校验通过，可以使用缓存数据
+                return false;
             }
             
             // 如果没有远程 MD5，使用本地 MD5 文件
             String localMd5 = new String(Files.readAllBytes(md5File.toPath()));
             return !contentMd5.equals(localMd5);
         } catch (Exception e) {
-            // 发生错误，重新下载
-            return true;
+            plugin.getLogger().severe("[BanWords] 校验过程发生错误: " + e.getMessage());
+            // 发生错误时拒绝使用
+            return false;
         }
     }
 
@@ -255,6 +271,11 @@ public class BanWordsProvider {
             return message;
         }
 
+        // 如果违禁词列表为空或不可用，直接返回原消息
+        if (banWords.isEmpty()) {
+            return message;
+        }
+
         String filtered = message;
         for (String word : banWords) {
             if (word != null && !word.isEmpty()) {
@@ -271,6 +292,11 @@ public class BanWordsProvider {
      */
     public boolean containsBanWord(String message) {
         if (message == null || message.isEmpty()) {
+            return false;
+        }
+
+        // 如果违禁词列表为空或不可用，返回false
+        if (banWords.isEmpty()) {
             return false;
         }
 
