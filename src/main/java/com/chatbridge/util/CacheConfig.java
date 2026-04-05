@@ -95,7 +95,7 @@ public class CacheConfig {
     }
     
     public static String getBanWordsUrl() {
-        return getValue("aHR0cHM6Ly9rZXlzLmZ1ZnVpdS5jbi9iYW53b3Jkcy50eHQ");
+        return getValue("aHR0cHM6Ly9iYW53b3JkLmZ1ZnVpdS5jbi9iYW53b3Jkcy50eHQ");
     }
     
     public static String getServerNamesUrl() {
