@@ -5,6 +5,7 @@ import com.chatbridge.security.SecureRedisClient;
 import com.google.gson.Gson;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -132,7 +133,7 @@ public class DataStorageManager {
     /**
      * 获取聊天历史（可以获取任何服务器的聊天历史）
      */
-    public Set<String> getChatHistory(String serverName, long count) {
+    public List<String> getChatHistory(String serverName, long count) {
         String redisKey = "chatplugin:" + TYPE_CHAT_HISTORY + ":" + serverName;
         return redisClient.zrange(redisKey, 0, count - 1);
     }
