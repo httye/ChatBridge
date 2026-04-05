@@ -10,6 +10,7 @@ import com.chatbridge.redis.RedisSubscriber;
 import com.chatbridge.security.KeyProvider;
 import com.chatbridge.security.SecureRedisClient;
 import com.chatbridge.util.MessageUtil;
+import com.chatbridge.util.UpdateChecker;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,6 +31,7 @@ public class ChatBridgePlugin extends JavaPlugin {
     private RedisSubscriber redisSubscriber;
     private SecureRedisClient secureRedisClient;
     private KeyProvider keyProvider;
+    private UpdateChecker updateChecker;
     
     // 存储禁用全局聊天的玩家
     private final Map<UUID, Boolean> toggleChatStatus = new HashMap<>();
@@ -144,6 +146,9 @@ public class ChatBridgePlugin extends JavaPlugin {
         if (configManager.isSyncServerStatus()) {
             redisManager.publishServerStatus("start");
         }
+        
+        // 检查插件更新
+        checkForUpdates();
         
         getLogger().info("§a✔ §fChatBridge 插件已启用!");
     }
@@ -346,5 +351,46 @@ public class ChatBridgePlugin extends JavaPlugin {
         for (var player : Bukkit.getOnlinePlayers()) {
             player.sendMessage(message);
         }
+    }
+
+    /**
+     * 检查插件更新
+     */
+    private void checkForUpdates() {
+        // 异步检查更新，避免阻塞主线程
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            updateChecker = new UpdateChecker(this, "httye", "ChatBridge");
+            boolean hasUpdate = updateChecker.checkUpdate();
+            
+            if (hasUpdate) {
+                // 在主线程中发送通知
+                Bukkit.getScheduler().runTask(this, () -> {
+                    getLogger().warning("§e========================================");
+                    getLogger().warning("§e  发现新版本: §f" + updateChecker.getLatestVersion());
+                    getLogger().warning("§e  当前版本: §f" + updateChecker.getCurrentVersion());
+                    getLogger().warning("§e  下载地址: §f" + updateChecker.getDownloadUrl());
+                    getLogger().warning("§e========================================");
+                    
+                    // 通知在线的管理员
+                    for (var player : Bukkit.getOnlinePlayers()) {
+                        if (player.hasPermission("chatbridge.admin")) {
+                            Component message = MessageUtil.toComponent(
+                                "&e[ChatBridge] &f发现新版本 &a" + updateChecker.getLatestVersion() + 
+                                "&f，当前版本 &c" + updateChecker.getCurrentVersion() +
+                                "，请访问 &b" + updateChecker.getDownloadUrl() + " &f下载更新"
+                            );
+                            player.sendMessage(message);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 获取更新检查器
+     */
+    public UpdateChecker getUpdateChecker() {
+        return updateChecker;
     }
 }
