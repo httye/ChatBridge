@@ -48,7 +48,7 @@ public class RedisManager {
         // 从缓存配置读取连接参数
         String username = CacheConfig.getUsername();
         String password = CacheConfig.getPassword();
-        
+
         if (password != null && !password.isEmpty()) {
             if (username != null && !username.isEmpty()) {
                 // Redis 7.0 ACL认证模式 (需要用户名和密码)
@@ -59,8 +59,8 @@ public class RedisManager {
                     5000,
                     username,
                     password,
-                    0,
-                    CacheConfig.getDatabase()
+                    CacheConfig.getDatabase(),
+                    false
                 );
             } else {
                 // 传统密码认证模式
