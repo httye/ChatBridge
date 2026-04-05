@@ -62,13 +62,17 @@ jobs:
 
     - name: Get version from tag
       id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "📌 Release Version: $VERSION"
 
     - name: Generate Release Notes
       id: release_notes
       run: |
         # 获取上一个 tag
         PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        echo "📌 Previous Tag: $PREV_TAG"
         
         # 如果没有上一个 tag，获取所有的 commit
         if [ -z "$PREV_TAG" ]; then
@@ -76,6 +80,9 @@ jobs:
         else
           COMMITS=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --reverse)
         fi
+        
+        echo "📝 Commits:"
+        echo "$COMMITS"
         
         # 生成 Release 说明
         cat > release_notes.md << RELEASE_NOTES
@@ -109,6 +116,7 @@ jobs:
         RELEASE_NOTES
         
         # 输出 Release 说明（用于调试）
+        echo "📄 Release Notes:"
         cat release_notes.md
         
         # 设置输出
@@ -125,5 +133,6 @@ jobs:
         name: ChatBridge ${{ steps.get_version.outputs.VERSION }}
         draft: false
         prerelease: false
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
