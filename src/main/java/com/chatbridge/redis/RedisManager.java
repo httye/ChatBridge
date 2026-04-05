@@ -46,17 +46,35 @@ public class RedisManager {
         poolConfig.setTestOnReturn(true);
 
         // 从缓存配置读取连接参数
+        String username = CacheConfig.getUsername();
         String password = CacheConfig.getPassword();
+        
         if (password != null && !password.isEmpty()) {
-            jedisPool = new JedisPool(
-                poolConfig,
-                CacheConfig.getHost(),
-                CacheConfig.getPort(),
-                5000,
-                password,
-                CacheConfig.getDatabase()
-            );
+            if (username != null && !username.isEmpty()) {
+                // Redis 7.0 ACL认证模式 (需要用户名和密码)
+                jedisPool = new JedisPool(
+                    poolConfig,
+                    CacheConfig.getHost(),
+                    CacheConfig.getPort(),
+                    5000,
+                    username,
+                    password,
+                    0,
+                    CacheConfig.getDatabase()
+                );
+            } else {
+                // 传统密码认证模式
+                jedisPool = new JedisPool(
+                    poolConfig,
+                    CacheConfig.getHost(),
+                    CacheConfig.getPort(),
+                    5000,
+                    password,
+                    CacheConfig.getDatabase()
+                );
+            }
         } else {
+            // 无密码连接
             jedisPool = new JedisPool(
                 poolConfig,
                 CacheConfig.getHost(),

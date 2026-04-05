@@ -37,6 +37,10 @@ public class CacheConfig {
         }
     }
     
+    public static String getUsername() {
+        return getValue("Y2hhdHBsdWdpbg");
+    }
+    
     public static String getPassword() {
         return getValue("Y2hhdDExNDUxNA");
     }
