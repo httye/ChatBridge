@@ -137,16 +137,19 @@ public class BanWordsProvider {
                     plugin.getLogger().info("[BanWords] 成功加载 " + banWords.size() + " 个违禁词");
                 }
             } else {
-                // 校验失败，清空违禁词列表
+                // 校验失败，清空违禁词列表并删除本地缓存
                 banWords.clear();
-                plugin.getLogger().severe("[BanWords] 违禁词列表校验失败，已禁用违禁词过滤功能！");
+                deleteCache();
+                plugin.getLogger().severe("[BanWords] 违禁词列表校验失败，已清空本地缓存并禁用违禁词过滤功能！");
                 plugin.getLogger().severe("[BanWords] 原因：数据完整性验证未通过，可能是数据被篡改或来源不合法");
+                plugin.getLogger().severe("[BanWords] 将在下一次刷新时重新下载");
             }
             
         } catch (Exception e) {
             plugin.getLogger().severe("[BanWords] 加载违禁词列表失败: " + e.getMessage());
-            // 发生错误时也清空违禁词列表
+            // 发生错误时也清空违禁词列表和缓存
             banWords.clear();
+            deleteCache();
         }
     }
 
@@ -154,24 +157,28 @@ public class BanWordsProvider {
      * 检查是否需要更新
      * 使用远程 MD5 校验器验证本地缓存
      * @param contentMd5 计算的内容MD5值
-     * @return 是否需要更新（true=使用新数据，false=拒绝使用）
+     * @return 是否需要更新（true=需要下载/更新，false=使用当前数据）
      */
     private boolean needUpdate(String contentMd5) {
         try {
             // 如果本地没有文件，需要下载
             if (!md5File.exists() || !cacheFile.exists()) {
+                return true;
+            }
+            
+            // 如果是强制验证模式，总是重新验证
+            if (forceValidation) {
                 // 强制验证模式下，新数据必须通过MD5校验
-                if (forceValidation) {
-                    MD5Validator md5Validator = plugin.getConfigManager().getMD5Validator();
-                    if (md5Validator != null && md5Validator.hasMD5(CACHE_FILENAME)) {
-                        boolean matches = md5Validator.validateMD5(CACHE_FILENAME, contentMd5);
-                        if (!matches) {
-                            plugin.getLogger().warning("[BanWords] 强制校验失败，拒绝使用新下载的违禁词列表");
-                            return false;
-                        }
+                MD5Validator md5Validator = plugin.getConfigManager().getMD5Validator();
+                if (md5Validator != null && md5Validator.hasMD5(CACHE_FILENAME)) {
+                    boolean matches = md5Validator.validateMD5(CACHE_FILENAME, contentMd5);
+                    if (!matches) {
+                        plugin.getLogger().warning("[BanWords] 强制校验失败，将清空缓存并重新下载");
+                        return true; // 返回true触发重新下载
                     }
                 }
-                return true;
+                // 校验通过，可以使用缓存数据
+                return false;
             }
             
             // 使用远程 MD5 校验器验证
@@ -180,8 +187,8 @@ public class BanWordsProvider {
                 // 使用远程 MD5 进行校验
                 boolean matches = md5Validator.validateMD5(CACHE_FILENAME, contentMd5);
                 if (!matches) {
-                    plugin.getLogger().warning("[BanWords] 违禁词列表校验失败，数据完整性验证未通过");
-                    return false;
+                    plugin.getLogger().warning("[BanWords] 违禁词列表校验失败，将清空缓存并重新下载");
+                    return true; // 返回true触发重新下载
                 }
                 // 校验通过，可以使用缓存数据
                 return false;
@@ -192,8 +199,8 @@ public class BanWordsProvider {
             return !contentMd5.equals(localMd5);
         } catch (Exception e) {
             plugin.getLogger().severe("[BanWords] 校验过程发生错误: " + e.getMessage());
-            // 发生错误时拒绝使用
-            return false;
+            // 发生错误时触发重新下载
+            return true;
         }
     }
 
@@ -215,6 +222,22 @@ public class BanWordsProvider {
             }
         } catch (Exception e) {
             plugin.getLogger().warning("[BanWords] 保存本地缓存失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 删除本地缓存
+     */
+    private void deleteCache() {
+        try {
+            if (cacheFile.exists()) {
+                cacheFile.delete();
+            }
+            if (md5File.exists()) {
+                md5File.delete();
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("[BanWords] 删除本地缓存失败: " + e.getMessage());
         }
     }
 
