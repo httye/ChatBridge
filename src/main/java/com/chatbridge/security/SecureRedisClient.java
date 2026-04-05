@@ -241,11 +241,11 @@ public class SecureRedisClient {
     /**
      * 获取有序集合范围（允许读取所有插件键）
      */
-    public Set<String> zrange(String key, long start, long stop) {
+    public List<String> zrange(String key, long start, long stop) {
         if (!permissionManager.canRead(key)) {
             return null;
         }
-        return this.<Set<String>>executeRead(jedis -> jedis.zrange(key, start, stop));
+        return this.<List<String>>executeRead(jedis -> jedis.zrange(key, start, stop));
     }
     
     // ==================== 键扫描操作 ====================
