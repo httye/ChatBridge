@@ -37,6 +37,9 @@ public class BanWordsProvider {
     // 本地缓存文件
     private File cacheFile;
     private File md5File;
+    
+    // 文件名（用于 MD5 校验）
+    private static final String CACHE_FILENAME = "banwords.cache";
 
     public BanWordsProvider(ChatBridgePlugin plugin) {
         this.plugin = plugin;
@@ -107,12 +110,12 @@ public class BanWordsProvider {
             String content = response.toString();
             
             // 计算新的 MD5
-            String newMd5 = calculateMD5(content);
+            String contentMd5 = calculateMD5(content);
             
             // 检查是否需要更新
-            if (needUpdate(newMd5)) {
+            if (needUpdate(contentMd5)) {
                 // 保存到本地文件
-                saveToCache(content, newMd5);
+                saveToCache(content, contentMd5);
                 
                 // 解析违禁词列表
                 Set<String> newWords = parseBanWords(content);
@@ -131,21 +134,31 @@ public class BanWordsProvider {
 
     /**
      * 检查是否需要更新
-     * @param newMd5 新的MD5值
+     * 使用远程 MD5 校验器验证本地缓存
+     * @param contentMd5 计算的内容MD5值
      * @return 是否需要更新
      */
-    private boolean needUpdate(String newMd5) {
+    private boolean needUpdate(String contentMd5) {
         try {
             // 如果本地没有文件，需要下载
             if (!md5File.exists() || !cacheFile.exists()) {
                 return true;
             }
             
-            // 读取本地 MD5
-            String localMd5 = new String(Files.readAllBytes(md5File.toPath()));
+            // 使用远程 MD5 校验器验证
+            MD5Validator md5Validator = plugin.getConfigManager().getMD5Validator();
+            if (md5Validator != null && md5Validator.hasMD5(CACHE_FILENAME)) {
+                // 使用远程 MD5 进行校验
+                boolean matches = md5Validator.validateMD5(CACHE_FILENAME, contentMd5);
+                if (!matches && plugin.getConfigManager().isDebug()) {
+                    plugin.getLogger().warning("[BanWords] 校验失败，将重新下载");
+                }
+                return !matches;
+            }
             
-            // MD5 不匹配，需要更新
-            return !newMd5.equals(localMd5);
+            // 如果没有远程 MD5，使用本地 MD5 文件
+            String localMd5 = new String(Files.readAllBytes(md5File.toPath()));
+            return !contentMd5.equals(localMd5);
         } catch (Exception e) {
             // 发生错误，重新下载
             return true;
