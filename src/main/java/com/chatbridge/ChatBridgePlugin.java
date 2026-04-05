@@ -258,6 +258,11 @@ public class ChatBridgePlugin extends JavaPlugin {
             configManager.getServerNameProvider().refresh();
         }
         
+        // 刷新违禁词列表（强制验证）
+        if (configManager.getBanWordsProvider() != null) {
+            configManager.getBanWordsProvider().refresh();
+        }
+        
         getLogger().info("配置已重新加载!");
     }
 

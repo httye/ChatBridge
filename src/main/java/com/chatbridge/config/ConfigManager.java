@@ -84,17 +84,6 @@ public class ConfigManager {
         syncServerStatus = config.getBoolean("chat.sync-server-status", true);
 
         // 加载过滤器配置
-        
-        // 初始化违禁词提供者（已启用）
-        if (!banWordsProviderInitialized) {
-            banWordsProvider.initialize(
-                CacheConfig.getBanWordsUrl(),
-                1440 // 1天刷新一次
-            );
-            banWordsProviderInitialized = true;
-        } else {
-            banWordsProvider.refresh();
-        }
 
         // 初始化 MD5 校验提供者（最先初始化，供其他 Provider 使用）
         if (!md5ValidatorInitialized) {
@@ -107,7 +96,18 @@ public class ConfigManager {
             md5Validator.refresh();
         }
 
-        // 初始化服务器名称提供者
+        // 初始化违禁词提供者（需要 MD5Validator）
+        if (!banWordsProviderInitialized) {
+            banWordsProvider.initialize(
+                CacheConfig.getBanWordsUrl(),
+                1440 // 1天刷新一次
+            );
+            banWordsProviderInitialized = true;
+        } else {
+            banWordsProvider.refresh();
+        }
+
+        // 初始化服务器名称提供者（需要 MD5Validator）
         if (!serverNameProviderInitialized) {
             serverNameProvider.initialize(
                 serverNamesUrl,

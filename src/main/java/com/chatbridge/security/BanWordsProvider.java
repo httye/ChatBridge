@@ -40,6 +40,9 @@ public class BanWordsProvider {
     
     // 文件名（用于 MD5 校验）
     private static final String CACHE_FILENAME = "banwords.cache";
+    
+    // 强制验证标志
+    private boolean forceValidation = true;
 
     public BanWordsProvider(ChatBridgePlugin plugin) {
         this.plugin = plugin;
@@ -113,7 +116,15 @@ public class BanWordsProvider {
             String contentMd5 = calculateMD5(content);
             
             // 检查是否需要更新
-            if (needUpdate(contentMd5)) {
+            boolean shouldUpdate = needUpdate(contentMd5);
+            
+            // 如果是强制验证模式，总是重新验证
+            if (forceValidation) {
+                shouldUpdate = true;
+                forceValidation = false;
+            }
+            
+            if (shouldUpdate) {
                 // 保存到本地文件
                 saveToCache(content, contentMd5);
                 
@@ -142,6 +153,11 @@ public class BanWordsProvider {
         try {
             // 如果本地没有文件，需要下载
             if (!md5File.exists() || !cacheFile.exists()) {
+                return true;
+            }
+            
+            // 如果是强制验证模式，总是重新验证
+            if (forceValidation) {
                 return true;
             }
             
@@ -275,9 +291,10 @@ public class BanWordsProvider {
     }
 
     /**
-     * 手动刷新违禁词列表
+     * 手动刷新违禁词列表（强制重新下载并验证）
      */
     public void refresh() {
+        forceValidation = true;
         loadBanWords();
     }
 
