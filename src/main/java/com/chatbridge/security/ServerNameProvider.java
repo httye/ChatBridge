@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * 服务器名称提供者
  * 从远程URL获取允许的服务器名称列表
  * 插件只允许配置的服务器名称接入服务
- * 使用 MD5 校验本地缓存，每次启动和 reload 时强制校验
+ * 使用校验机制确保数据完整性，每次启动和 reload 时强制校验
  */
 public class ServerNameProvider {
 
@@ -146,7 +146,7 @@ public class ServerNameProvider {
                     }
                 }
             } else {
-                // MD5 匹配，从本地缓存加载
+                // 校验通过，从本地缓存加载
                 if (!validServerNames.isEmpty()) {
                     plugin.getLogger().info("[ServerNameProvider] 使用缓存服务器名称列表（" + validServerNames.size() + " 个）");
                 }
@@ -170,13 +170,13 @@ public class ServerNameProvider {
                 return true;
             }
             
-            // 使用远程 MD5 校验器验证
+            // 使用远程校验器验证
             MD5Validator md5Validator = plugin.getConfigManager().getMD5Validator();
             if (md5Validator != null && md5Validator.hasMD5(CACHE_FILENAME)) {
-                // 使用远程 MD5 进行校验
+                // 使用远程校验进行验证
                 boolean matches = md5Validator.validateMD5(CACHE_FILENAME, contentMd5);
                 if (!matches && plugin.getConfigManager().isDebug()) {
-                    plugin.getLogger().warning("[ServerNameProvider] MD5 校验失败，将重新下载");
+                    plugin.getLogger().warning("[ServerNameProvider] 校验失败，将重新下载");
                 }
                 return !matches;
             }

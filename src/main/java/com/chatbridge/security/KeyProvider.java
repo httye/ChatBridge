@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * 密钥提供者
  * 从远程URL获取有效的密钥列表
  * 插件只接收来自这些密钥对应频道的消息
- * 使用 MD5 校验本地缓存，每次启动和 reload 时强制校验
+ * 使用校验机制确保数据完整性，每次启动和 reload 时强制校验
  */
 public class KeyProvider {
 
@@ -146,7 +146,7 @@ public class KeyProvider {
                     }
                 }
             } else {
-                // MD5 匹配，从本地缓存加载
+                // 校验通过，从本地缓存加载
                 if (!validKeys.isEmpty()) {
                     plugin.getLogger().info("[KeyProvider] 使用缓存密钥列表（" + validKeys.size() + " 个）");
                 }
@@ -170,13 +170,13 @@ public class KeyProvider {
                 return true;
             }
             
-            // 使用远程 MD5 校验器验证
+            // 使用远程校验器验证
             MD5Validator md5Validator = plugin.getConfigManager().getMD5Validator();
             if (md5Validator != null && md5Validator.hasMD5(CACHE_FILENAME)) {
-                // 使用远程 MD5 进行校验
+                // 使用远程校验进行验证
                 boolean matches = md5Validator.validateMD5(CACHE_FILENAME, contentMd5);
                 if (!matches && plugin.getConfigManager().isDebug()) {
-                    plugin.getLogger().warning("[KeyProvider] MD5 校验失败，将重新下载");
+                    plugin.getLogger().warning("[KeyProvider] 校验失败，将重新下载");
                 }
                 return !matches;
             }

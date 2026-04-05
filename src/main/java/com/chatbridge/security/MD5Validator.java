@@ -15,8 +15,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * MD5 校验提供者
- * 从远程 URL 获取文件的 MD5 校验信息
+ * 校验提供者
+ * 从远程 URL 获取文件的校验信息
  * 用于验证本地缓存的文件完整性
  */
 public class MD5Validator {
@@ -72,7 +72,7 @@ public class MD5Validator {
      */
     private void loadMD5List() {
         if (md5ListUrl == null || md5ListUrl.isEmpty()) {
-            plugin.getLogger().warning("[MD5Validator] MD5 列表 URL 未配置");
+            plugin.getLogger().warning("[MD5Validator] 校验列表 URL 未配置");
             return;
         }
         
@@ -85,7 +85,7 @@ public class MD5Validator {
             
             int responseCode = connection.getResponseCode();
             if (responseCode != 200) {
-                plugin.getLogger().warning("[MD5Validator] 获取 MD5 列表失败，HTTP 响应码: " + responseCode);
+                plugin.getLogger().warning("[MD5Validator] 获取校验列表失败，HTTP 响应码: " + responseCode);
                 return;
             }
             
@@ -111,10 +111,10 @@ public class MD5Validator {
                     }
                 }
                 
-                plugin.getLogger().info("[MD5Validator] 成功加载 " + md5Map.size() + " 个 MD5 校验信息");
+                plugin.getLogger().info("[MD5Validator] 成功加载 " + md5Map.size() + " 个校验信息");
                 
                 if (plugin.getConfigManager().isDebug()) {
-                    plugin.getLogger().info("[MD5Validator] MD5 列表: " + md5Map);
+                    plugin.getLogger().info("[MD5Validator] 校验列表: " + md5Map);
                 }
             }
             
@@ -124,9 +124,9 @@ public class MD5Validator {
     }
 
     /**
-     * 获取文件的 MD5 值
+     * 获取文件的校验值
      * @param filename 文件名
-     * @return MD5 值，如果不存在则返回 null
+     * @return 校验值，如果不存在则返回 null
      */
     public String getMD5(String filename) {
         return md5Map.get(filename);
@@ -150,32 +150,28 @@ public class MD5Validator {
     }
 
     /**
-     * 验证文件的 MD5 是否匹配
+     * 验证文件的校验值是否匹配
      * @param filename 文件名
-     * @param expectedMD5 期望的 MD5 值
+     * @param expectedMD5 期望的校验值
      * @return 是否匹配
      */
     public boolean validateMD5(String filename, String expectedMD5) {
         String remoteMD5 = getMD5(filename);
         if (remoteMD5 == null) {
-            plugin.getLogger().warning("[MD5Validator] 文件 " + filename + " 不在远程 MD5 列表中");
+            plugin.getLogger().warning("[MD5Validator] 文件 " + filename + " 不在远程校验列表中");
             return false;
         }
         
         boolean matches = remoteMD5.equals(expectedMD5);
         if (!matches) {
-            plugin.getLogger().warning("[MD5Validator] 文件 " + filename + " 的 MD5 不匹配");
-            // 仅在 debug 模式下显示详细 MD5 值
-            if (plugin.getConfigManager().isDebug()) {
-                plugin.getLogger().warning("[MD5Validator] 期望: " + remoteMD5 + ", 实际: " + expectedMD5);
-            }
+            plugin.getLogger().warning("[MD5Validator] 文件 " + filename + " 的校验不匹配");
         }
         
         return matches;
     }
 
     /**
-     * 手动刷新 MD5 列表
+     * 手动刷新校验列表
      */
     public void refresh() {
         loadMD5List();
@@ -191,14 +187,14 @@ public class MD5Validator {
     }
 
     /**
-     * MD5 列表响应结构
+     * 校验列表响应结构
      */
     private static class MD5ListResponse {
         Set<MD5Item> md5;
     }
 
     /**
-     * MD5 项结构
+     * 校验项结构
      */
     private static class MD5Item {
         String docname;
