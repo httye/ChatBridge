@@ -4,7 +4,7 @@
 
 ## 💫 ~ 让你的多个服务器连接起来，畅聊无阻！ ~ 💫
 
-[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/httye/ChatBridge)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/httye/ChatBridge)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Paper](https://img.shields.io/badge/Paper-1.20.4+-orange.svg)](https://papermc.io)
 
