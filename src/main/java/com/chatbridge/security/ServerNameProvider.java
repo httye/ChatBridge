@@ -256,7 +256,11 @@ public class ServerNameProvider {
                         Object firstItem = response.names.iterator().next();
                         if (firstItem instanceof String) {
                             // 字符串集合格式
-                            serverNames.addAll(response.names);
+                            for (Object obj : response.names) {
+                                if (obj instanceof String) {
+                                    serverNames.add((String) obj);
+                                }
+                            }
                         } else {
                             // 对象集合格式，需要提取 name 字段
                             for (Object obj : response.names) {

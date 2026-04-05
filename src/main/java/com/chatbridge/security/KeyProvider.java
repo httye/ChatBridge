@@ -256,7 +256,11 @@ public class KeyProvider {
                         Object firstKey = response.keys.iterator().next();
                         if (firstKey instanceof String) {
                             // 字符串集合格式
-                            keys.addAll(response.keys);
+                            for (Object obj : response.keys) {
+                                if (obj instanceof String) {
+                                    keys.add((String) obj);
+                                }
+                            }
                         } else {
                             // 对象集合格式，需要提取 key 字段
                             for (Object obj : response.keys) {
